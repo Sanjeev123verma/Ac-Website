@@ -1,4 +1,4 @@
-// src/components/AdminSidebar.js
+
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -6,7 +6,6 @@ import { useAuth } from "@/context/authContext";
 import { FiX } from "react-icons/fi"; // Close icon
 import { IoMdAddCircleOutline } from "react-icons/io";
 import Image from "next/image";
-
 
 export default function AdminSidebar({ isOpen, onClose }) {
   // Receive isOpen and onClose as props
@@ -51,7 +50,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
           <li className={getLinkClasses("/admin/dashboard")}>
             <Link href="/admin/dashboard">Dashboard</Link>
           </li>
-          <li className={getLinkClasses("/admin/customer")}>
+          <li className={getLinkClasses("/admin/customers")}>
             <Link href="/admin/customers">Customers</Link>
           </li>
           <li className={getLinkClasses("/admin/services")}>
@@ -70,10 +69,13 @@ export default function AdminSidebar({ isOpen, onClose }) {
           </li>
 
           <li className={getLinkClasses("/admin/dashboard")}>
-            <div className="flex items-center space-x-2">
+            <Link
+              href="/admin/dashboard"
+              className="flex items-center space-x-2"
+            >
               <IoMdAddCircleOutline className="text-2xl" />
-              <Link href="/admin/dashboard">Add Banners</Link>
-            </div>
+              <span>Add Banners</span>
+            </Link>
           </li>
         </ul>
       </nav>

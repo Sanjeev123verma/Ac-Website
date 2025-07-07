@@ -38,4 +38,4 @@ const UserSchema = new mongoose.Schema({
   timestamps: true // This will add createdAt and updatedAt fields automatically
 });
 
-module.exports = mongoose.models.User || mongoose.model('User', UserSchema);
+module.exports = mongoose.models.Contact || mongoose.model('Contact', UserSchema);

@@ -6,12 +6,14 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
+import { toast } from "react-hot-toast";
+import AsyncSelect from "react-select/async";
+import { useFormikContext } from "formik";
 
 const ContactPage = () => {
+
   const searchParams = useSearchParams();
   const serviceQuery = searchParams.get("service");
-  const [statusMessage, setStatusMessage] = useState('')
-  const [isPopupVisible, setIsPopupVisible] = useState(false);
   // Initial values for Formik
   const initialValues = {
     name: "",
@@ -37,26 +39,42 @@ const ContactPage = () => {
   });
 
   // Handle form submission with axios
-  const handleSubmit = async (values, { setSubmitting, resetForm, setStatus }) => {
+  const handleSubmit = async (
+    values,
+    { setSubmitting, resetForm, setStatus }
+  ) => {
     try {
       const response = await axios.post("/api/contact", values);
+
       if (response.status === 200) {
-        setStatusMessage("Thank you for your message! Our Technician will contact you soon." );
+        toast.success(
+          "Form submitted successfully! Our technician will contact you.",
+          {
+            className: "text-xl font-semibold text-blue-800",
+          }
+        );
         resetForm();
       } else {
-        setStatusMessage(result.message || "Failed to submit form. Please try again.");
+        toast.error("Failed to submit form. Please try again.");
       }
     } catch (error) {
       console.error("Error submitting the form:", error);
-      setStatusMessage({ error: "An error occurred. Please try again." });
+      toast.error("An error occurred. Please try again.");
     } finally {
       setSubmitting(false);
-      setIsPopupVisible(true);
     }
   };
 
-  const closePopup = () => {
-    setIsPopupVisible(false);
+  const loadServiceOptions = async (inputValue) => {
+    const res = await fetch(`/api/service?search=${inputValue}`);
+    const data = await res.json();
+
+    return (
+      data?.data?.services?.map((s) => ({
+        label: s.service,
+        value: s.service,
+      })) || []
+    );
   };
 
   return (
@@ -76,7 +94,7 @@ const ContactPage = () => {
               validationSchema={validationSchema}
               onSubmit={handleSubmit}
             >
-              {({ isSubmitting, status }) => (
+              {({ isSubmitting, status, setFieldValue, values }) => (
                 <Form className="space-y-4">
                   <div>
                     <Field
@@ -85,7 +103,11 @@ const ContactPage = () => {
                       placeholder="Your Name"
                       className="w-full p-2 border rounded"
                     />
-                    <ErrorMessage name="name" component="p" className="text-red-500 text-sm" />
+                    <ErrorMessage
+                      name="name"
+                      component="p"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
 
                   <div>
@@ -95,7 +117,11 @@ const ContactPage = () => {
                       placeholder="Phone"
                       className="w-full p-2 border rounded"
                     />
-                    <ErrorMessage name="phone" component="p" className="text-red-500 text-sm" />
+                    <ErrorMessage
+                      name="phone"
+                      component="p"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
 
                   <div>
@@ -106,22 +132,34 @@ const ContactPage = () => {
                       placeholder="Address"
                       className="w-full p-2 border rounded h-16"
                     />
-                    <ErrorMessage name="address" component="p" className="text-red-500 text-sm" />
+                    <ErrorMessage
+                      name="address"
+                      component="p"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
 
-                  <div>
-                    <Field as="select" id="service" name="service" className="w-full p-2 border rounded">
-                      <option value="" disabled>
-                        Select Service
-                      </option>
-                      <option value="AC Installation">AC Installation</option>
-                      <option value="AC Repair">AC Repair</option>
-                      <option value="AC Dry & Wet Service">AC Dry & Wet Service</option>
-                      <option value="AC Gas Charging">AC Gas Charging</option>
-                      <option value="PCB Repair">PCB Repair</option>
-                      <option value="Other Issue">Other Issue</option>
-                    </Field>
-                    <ErrorMessage name="service" component="p" className="text-red-500 text-sm" />
+                  <div className="">
+                    <AsyncSelect
+                      cacheOptions
+                      defaultOptions
+                      loadOptions={loadServiceOptions}
+                      value={
+                        values.service
+                          ? { label: values.service, value: values.service }
+                          : null
+                      }
+                      onChange={(selectedOption) =>
+                        setFieldValue("service", selectedOption?.value)
+                      }
+                      placeholder="Select service..."
+                      className="text-left"
+                    />
+                    <ErrorMessage
+                      name="service"
+                      component="p"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
 
                   <div>
@@ -132,26 +170,24 @@ const ContactPage = () => {
                       placeholder="Message"
                       className="w-full p-2 border rounded h-32"
                     />
-                    <ErrorMessage name="message" component="p" className="text-red-500 text-sm" />
+                    <ErrorMessage
+                      name="message"
+                      component="p"
+                      className="text-red-500 text-sm"
+                    />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${
-                      isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {isSubmitting ? "Submitting..." : "Book now"}
-                  </button>
-
-                  {/* Status messages */}
-                  {status && status.success && (
-                    <p className="text-green-600 text-center">{status.success}</p>
-                  )}
-                  {status && status.error && (
-                    <p className="text-red-600 text-center">{status.error}</p>
-                  )}
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${
+                        isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      {isSubmitting ? "Submitting..." : "Book now"}
+                    </button>
+                  </div>
                 </Form>
               )}
             </Formik>
@@ -164,24 +200,11 @@ const ContactPage = () => {
         </div>
       </div>
 
-      {isPopupVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded shadow-lg max-w-md text-center">
-            <p className="text-lg text-green-600 font-semibold">{statusMessage}</p>
-            <button
-              onClick={closePopup}
-              className="mt-4 bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-
       {/* Map section */}
       <div className="m-2">
-        <h1 className="text-4xl font-bold text-center mt-10 mb-2">Our Location</h1>
+        <h1 className="text-4xl font-bold text-center mt-10 mb-2">
+          Our Location
+        </h1>
         <iframe
           src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3765.3873013677403!2d72.84887097425795!3d19.30899304461867!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7b02b2d5c65cb%3A0xe2f32eb9fb1839ed!2sNirmala%20Niketan%20High%20School!5e0!3m2!1sen!2sin!4v1732011957419!5m2!1sen!2sin"
           width="100%"

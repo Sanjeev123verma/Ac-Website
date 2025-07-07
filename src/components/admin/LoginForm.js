@@ -7,12 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 
-export function LoginForm({ className, ...props }) {
+export function LoginForm({
+  email,
+  setEmail,
+  password,
+  setPassword,
+  handleSubmit,
+  className,
+  ...props
+}) {
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid grid-cols-1 md:grid-cols-2 items-center p-0 min-h-[500px]">
-          <form className="flex flex-col justify-center p-6 md:p-8 w-full max-w-md mx-auto">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col justify-center p-6 md:p-8 w-full max-w-md mx-auto"
+          >
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
                 <h1 className="text-2xl font-bold">Welcome To Admin Panel</h1>
@@ -25,13 +36,21 @@ export function LoginForm({ className, ...props }) {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
                   required
                 />
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
               <Button type="submit" className="w-full">
                 Login

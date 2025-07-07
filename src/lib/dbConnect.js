@@ -1,10 +1,9 @@
-// src/lib/dbConnect.js
 import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.log("MONGODB_URI is undefined");
+  console.error("MONGODB_URI is missing");
   throw new Error(
     "Please define the MONGODB_URI environment variable inside .env"
   );
