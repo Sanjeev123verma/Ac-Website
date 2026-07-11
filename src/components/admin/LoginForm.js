@@ -60,10 +60,10 @@ export function LoginForm({
 
           <div className="bg-muted relative hidden md:block h-[500px] w-full">
             <Image
-              src="/Images/image.jpg"
-              alt="Image"
+              src="/ai-assets/service-desk.jpg"
+              alt="Appliance repair service desk"
               fill
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+              className="absolute inset-0 h-full w-full object-cover object-center dark:brightness-[0.2] dark:grayscale"
             />
           </div>
         </CardContent>

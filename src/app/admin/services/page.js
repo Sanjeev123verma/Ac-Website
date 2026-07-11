@@ -1,22 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import AdminLayout from "../AdminLayout";
 import Breadcrumb from "@/components/admin/Breadcrumb";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  useReactTable,
+  flexRender,
   getCoreRowModel,
   getPaginationRowModel,
-  flexRender,
+  useReactTable,
 } from "@tanstack/react-table";
-import { RiDeleteBin6Fill } from "react-icons/ri";
 import { format } from "date-fns";
+import { Pencil } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { RiDeleteBin6Fill } from "react-icons/ri";
 
 const ServicePage = () => {
   const queryClient = useQueryClient();
-
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
@@ -30,7 +29,6 @@ const ServicePage = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // 🚀 Add Service Mutation
   const addMutation = useMutation({
     mutationFn: async (serviceName) => {
       const res = await fetch("/api/service", {
@@ -42,25 +40,13 @@ const ServicePage = () => {
       return res.json();
     },
     onSuccess: () => {
-      toast.success("Service Created Successfully");
+      toast.success("Service created successfully");
       queryClient.invalidateQueries({ queryKey: ["services"], exact: false });
       setNewService("");
       setShowModal(false);
     },
     onError: (err) => toast.error(err.message),
   });
-
-  const handleSubmit = () => {
-    if (!newService.trim()) {
-      toast.error("Please enter a service name.");
-      return;
-    }
-    if (isEditing) {
-      updateMutation.mutate({ id: selectedId, service: newService });
-    } else {
-      addMutation.mutate(newService);
-    }
-  };
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, service }) => {
@@ -83,7 +69,6 @@ const ServicePage = () => {
     onError: (err) => toast.error(err.message),
   });
 
-  // 🔄 Fetch Services Query
   const {
     data: fetchData,
     isLoading,
@@ -106,6 +91,7 @@ const ServicePage = () => {
       const json = await res.json();
       if (!json.success)
         throw new Error(json.message || "Failed to fetch services");
+
       return {
         services: json.data?.services || [],
         pagination: json.data?.pagination || {
@@ -117,7 +103,6 @@ const ServicePage = () => {
     },
   });
 
-  // ❌ Delete Service Mutation
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       const res = await fetch(`/api/service/${id}`, { method: "DELETE" });
@@ -126,10 +111,23 @@ const ServicePage = () => {
     },
     onSuccess: () => {
       toast.success("Service deleted");
-      queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["services"], exact: false });
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const handleSubmit = () => {
+    if (!newService.trim()) {
+      toast.error("Please enter a service name.");
+      return;
+    }
+
+    if (isEditing) {
+      updateMutation.mutate({ id: selectedId, service: newService });
+    } else {
+      addMutation.mutate(newService);
+    }
+  };
 
   const columns = [
     {
@@ -151,20 +149,21 @@ const ServicePage = () => {
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={() => {
               setIsEditing(true);
               setSelectedId(row.original._id);
-              setNewService(row.original.service); // pre-fill input
+              setNewService(row.original.service);
               setShowModal(true);
             }}
             className="text-blue-500 hover:text-blue-700"
             title="Edit"
           >
-            ✏️
+            <Pencil size={18} />
           </button>
 
           <RiDeleteBin6Fill
-            className="text-red-500 cursor-pointer hover:text-red-700"
+            className="cursor-pointer text-red-500 hover:text-red-700"
             onClick={() => {
               if (confirm("Delete this service?")) {
                 deleteMutation.mutate(row.original._id);
@@ -188,155 +187,156 @@ const ServicePage = () => {
   });
 
   return (
-    <AdminLayout>
-      <div className="px-4 ml-64">
-        <h1 className="flex text-3xl font-bold justify-center">Admin Services</h1>
-        <Breadcrumb />
+    <div>
+      <h1 className="flex justify-center text-3xl font-bold">Admin Services</h1>
+      <Breadcrumb />
 
-        {/* ➕ Add Service Button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => {
-              setNewService(""); // clear input
-              setIsEditing(false); // reset edit mode
-              setSelectedId(null); // reset selected service
-              setShowModal(true);
-            }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            Add Service
-          </button>
-        </div>
+      <div className="mb-4 flex justify-end">
+        <button
+          type="button"
+          onClick={() => {
+            setNewService("");
+            setIsEditing(false);
+            setSelectedId(null);
+            setShowModal(true);
+          }}
+          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+        >
+          Add Service
+        </button>
+      </div>
 
-        {/* 🪟 Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
-            <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-6 relative">
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+            <button
+              type="button"
+              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowModal(false)}
+              aria-label="Close service modal"
+            >
+              x
+            </button>
+            <h2 className="mb-4 text-xl font-semibold">
+              {isEditing ? "Edit Service" : "Add New Service"}
+            </h2>
+            <input
+              type="text"
+              placeholder="Enter service name"
+              value={newService}
+              onChange={(e) => setNewService(e.target.value)}
+              className="mb-4 w-full rounded-md border border-gray-300 p-2"
+            />
+            <div className="flex justify-end gap-2">
               <button
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowModal(false)}
+                type="button"
+                onClick={handleSubmit}
+                disabled={addMutation.isPending || updateMutation.isPending}
+                className="rounded-md bg-green-500 px-4 py-2 text-white disabled:opacity-60"
               >
-                ✖
+                {isEditing ? "Update" : "Submit"}
               </button>
-              <h2 className="text-xl font-semibold mb-4">
-                {isEditing ? "Edit Service" : "Add New Service"}
-              </h2>
-              <input
-                type="text"
-                placeholder="Enter service name"
-                value={newService}
-                onChange={(e) => setNewService(e.target.value)}
-                className="w-full border border-gray-300 p-2 rounded-md mb-4"
-              />
-              <div className="flex justify-end gap-2">
+            </div>
+          </div>
+        </div>
+      )}
+
+      <hr className="my-4 border-t border-gray-300" />
+
+      <div className="flex items-center justify-end gap-2">
+        <input
+          type="text"
+          placeholder="Search by service..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-60 rounded-md border border-gray-300 p-2"
+        />
+        <button
+          type="button"
+          onClick={refetch}
+          className="rounded-md bg-blue-500 px-4 py-2 text-white"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        {isLoading ? (
+          <div className="py-12 text-center text-gray-500">Loading...</div>
+        ) : isError ? (
+          <div className="text-red-500">{error.message}</div>
+        ) : (
+          <>
+            <table className="min-w-full rounded-lg border">
+              <thead className="bg-gray-100">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="border-b px-4 py-2 text-left"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={columns.length} className="p-4 text-center">
+                      No data found
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="border-b px-4 py-2">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <div className="mt-4 flex justify-between">
+              <span>
+                Page {fetchData?.pagination?.currentPage || 1} of{" "}
+                {fetchData?.pagination?.totalPages || 1}
+              </span>
+              <div className="flex gap-2">
                 <button
-                  onClick={handleSubmit}
-                  className="px-4 py-2 bg-green-500 text-white rounded-md"
+                  type="button"
+                  disabled={!table.getCanPreviousPage()}
+                  onClick={() => table.previousPage()}
+                  className="rounded bg-gray-300 px-3 py-1 disabled:opacity-50"
                 >
-                  {isEditing ? "Update" : "Submit"}
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  disabled={!table.getCanNextPage()}
+                  onClick={() => table.nextPage()}
+                  className="rounded bg-gray-300 px-3 py-1 disabled:opacity-50"
+                >
+                  Next
                 </button>
               </div>
             </div>
-          </div>
+          </>
         )}
-
-        <hr className="border-t border-gray-300 my-4" />
-
-        {/* 🔍 Search */}
-        <div className="flex justify-end gap-2 items-center">
-          <input
-            type="text"
-            placeholder="Search by service..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 p-2 rounded-md w-60"
-          />
-          <button
-            onClick={refetch}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md"
-          >
-            Refresh
-          </button>
-        </div>
-
-        {/* 📋 Table */}
-        <div className="overflow-x-auto">
-          {isLoading ? (
-            <div className="text-center py-12 text-gray-500">Loading...</div>
-          ) : isError ? (
-            <div className="text-red-500">{error.message}</div>
-          ) : (
-            <>
-              <table className="min-w-full border rounded-lg">
-                <thead className="bg-gray-100">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="border-b px-4 py-2 text-left"
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center p-4">
-                        No data found
-                      </td>
-                    </tr>
-                  ) : (
-                    table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className="hover:bg-gray-50">
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-4 py-2 border-b">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-
-              {/* Pagination */}
-              <div className="flex justify-between mt-4">
-                <span>
-                  Page {fetchData?.pagination?.currentPage || 1} of{" "}
-                  {fetchData?.pagination?.totalPages || 1}
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    disabled={!table.getCanPreviousPage()}
-                    onClick={() => table.previousPage()}
-                    className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
-                  <button
-                    disabled={!table.getCanNextPage()}
-                    onClick={() => table.nextPage()}
-                    className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 };
 

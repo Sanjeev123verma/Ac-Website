@@ -11,13 +11,12 @@ const WhatsApp = () => {
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative group flex items-center bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 transition-all duration-300"
+        className="group relative flex items-center border-2 border-ink bg-green-500 text-white shadow-hard transition-all duration-200 hover:-translate-y-1"
       >
         <div className="p-3">
-          <FaWhatsapp size={40} />
+          <FaWhatsapp size={34} />
         </div>
-        {/* Tooltip */}
-        <div className="absolute bottom-20 right-1 bg-gray-900 text-white text-sm py-2 px-4 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+        <div className="pointer-events-none absolute bottom-16 right-0 whitespace-nowrap border-2 border-ink bg-paper px-3 py-2 text-sm font-bold text-ink opacity-0 shadow-hard-sm transition-opacity duration-200 group-hover:opacity-100">
           Contact on WhatsApp
         </div>
       </a>

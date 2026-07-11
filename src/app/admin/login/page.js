@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/authContext";
 import { LoginForm } from "@/components/admin/LoginForm";
@@ -8,7 +8,13 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
-  const { login } = useAuth();
+  const { isAdmin, login } = useAuth();
+
+  useEffect(() => {
+    if (isAdmin) {
+      router.replace("/admin/dashboard");
+    }
+  }, [isAdmin, router]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

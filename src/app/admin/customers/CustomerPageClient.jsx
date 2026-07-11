@@ -1,31 +1,30 @@
 "use client";
-import AdminLayout from "@/app/admin/AdminLayout";
-import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+import Breadcrumb from "@/components/admin/Breadcrumb";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  useReactTable,
+  flexRender,
   getCoreRowModel,
   getPaginationRowModel,
-  flexRender,
+  useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { RiDeleteBin6Fill } from "react-icons/ri";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import Breadcrumb from "@/components/admin/Breadcrumb";
+import { RiDeleteBin6Fill } from "react-icons/ri";
 
 export default function CustomerPageClient() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("Pending");
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
-
   const [debouncedSearch, setDebouncedSearch] = useState(search);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);
 
-  // 🔁 Fetch filtered data
   const {
     data: fetchData,
     isLoading,
@@ -49,6 +48,7 @@ export default function CustomerPageClient() {
       );
       const json = await res.json();
       if (!json.success) throw new Error(json.message || "Fetch error");
+
       return {
         contacts: json.data?.contacts || [],
         pagination: json.data?.pagination || {
@@ -60,7 +60,14 @@ export default function CustomerPageClient() {
     },
   });
 
-  // 🧹 Delete Mutation
+  const refreshContacts = () => {
+    queryClient.invalidateQueries({ queryKey: ["contacts"], exact: false });
+    queryClient.invalidateQueries({
+      queryKey: ["dashboard-contacts"],
+      exact: false,
+    });
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       const res = await fetch(`/api/contact?id=${id}`, { method: "DELETE" });
@@ -69,53 +76,28 @@ export default function CustomerPageClient() {
     },
     onSuccess: () => {
       toast.success("Deleted successfully");
-      queryClient.invalidateQueries(["contacts"]);
+      refreshContacts();
     },
     onError: (err) => toast.error(err.message),
   });
 
-  // 🔁 Status Toggle Mutation
   const updateStatusMutation = useMutation({
-  mutationFn: async ({ id, status }) => {
-    const res = await fetch(`/api/contact/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) throw new Error("Status update failed");
-    return res.json();
-  },
-  onMutate: async ({ id, status }) => {
-    await queryClient.cancelQueries({ queryKey: ["contacts"] });
+    mutationFn: async ({ id, status }) => {
+      const res = await fetch(`/api/contact/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Status update failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Status updated");
+      refreshContacts();
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-    const previousData = queryClient.getQueryData(["contacts"]);
-
-    // Optimistically update
-    queryClient.setQueryData(["contacts"], (old) => {
-      if (!old) return old;
-      const updatedContacts = old.contacts.map((contact) =>
-        contact._id === id ? { ...contact, status } : contact
-      );
-      return { ...old, contacts: updatedContacts };
-    });
-
-    return { previousData };
-  },
-  onError: (err, variables, context) => {
-    if (context?.previousData) {
-      queryClient.setQueryData(["contacts"], context.previousData);
-    }
-    toast.error(err.message);
-  },
-  onSuccess: () => {
-    toast.success("Status updated");
-      queryClient.invalidateQueries({ queryKey: ["contacts", "Pending"] });
-  queryClient.invalidateQueries({ queryKey: ["contacts", "Completed"] });
-  },
-});
-
-
-  // 🧾 Table Columns
   const columns = [
     {
       header: "Sr. No",
@@ -144,8 +126,9 @@ export default function CustomerPageClient() {
       cell: ({ row }) => {
         const status = row.original.status;
         const isCompleted = status === "Completed";
+
         return (
-          <label className="inline-flex items-center cursor-pointer">
+          <label className="inline-flex cursor-pointer items-center">
             <input
               type="checkbox"
               className="sr-only peer"
@@ -159,15 +142,15 @@ export default function CustomerPageClient() {
               }
             />
             <div
-              className={`w-14 h-7 rounded-full peer ${
+              className={`peer relative h-7 w-14 rounded-full transition-colors duration-300 ${
                 isCompleted ? "bg-green-400" : "bg-yellow-400"
-              } relative transition-colors duration-300`}
+              }`}
             >
               <div
-                className={`absolute top-0.5 left-1 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 ${
+                className={`absolute left-1 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 ${
                   isCompleted ? "translate-x-7" : "translate-x-0"
                 }`}
-              ></div>
+              />
             </div>
             <span className="ml-3 text-sm font-medium text-gray-700">
               {isCompleted ? "Completed" : "Pending"}
@@ -185,7 +168,7 @@ export default function CustomerPageClient() {
       header: "Action",
       cell: ({ row }) => (
         <RiDeleteBin6Fill
-          className="text-red-500 cursor-pointer hover:text-red-700"
+          className="cursor-pointer text-red-500 hover:text-red-700"
           onClick={() => {
             if (confirm("Delete this contact?")) {
               deleteMutation.mutate(row.original._id);
@@ -208,123 +191,124 @@ export default function CustomerPageClient() {
   });
 
   return (
-    <AdminLayout>
-      <div className="px-4 ml-64">
-        <h1 className="flex justify-center text-3xl font-bold">Admin Customers</h1>
-        <Breadcrumb />
-        {/* Tabs */}
-        <div className="flex space-x-8 bg-gray-100 p-2 rounded-md mb-2">
-          {["Pending", "Completed"].map((tab) => (
-            <div
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`cursor-pointer px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                activeTab === tab
-                  ? "text-blue-600 font-semibold"
-                  : "text-gray-600 hover:text-blue-500"
-              }`}
-            >
-              {tab}
-            </div>
-          ))}
-        </div>
+    <div>
+      <h1 className="flex justify-center text-3xl font-bold">
+        Admin Customers
+      </h1>
+      <Breadcrumb />
 
-        <hr className="border-t border-gray-700 mb-4" />
-
-        {/* Search & Refresh */}
-        <div className="flex justify-end gap-2 items-center">
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 p-2 rounded-md w-60"
-          />
+      <div className="mb-2 flex space-x-8 rounded-md bg-gray-100 p-2">
+        {["Pending", "Completed"].map((tab) => (
           <button
-            onClick={refetch}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md"
+            type="button"
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? "font-semibold text-blue-600"
+                : "text-gray-600 hover:text-blue-500"
+            }`}
           >
-            Refresh
+            {tab}
           </button>
-        </div>
+        ))}
+      </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          {isLoading ? (
-            <div className="text-center py-12 text-gray-500">Loading...</div>
-          ) : isError ? (
-            <div className="text-red-500">{error.message}</div>
-          ) : (
-            <>
-              <table className="min-w-full border rounded-lg">
-                <thead className="bg-gray-100">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="border-b px-4 py-2 text-left"
-                        >
+      <hr className="mb-4 border-t border-gray-700" />
+
+      <div className="flex items-center justify-end gap-2">
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-60 rounded-md border border-gray-300 p-2"
+        />
+        <button
+          type="button"
+          onClick={refetch}
+          className="rounded-md bg-blue-500 px-4 py-2 text-white"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        {isLoading ? (
+          <div className="py-12 text-center text-gray-500">Loading...</div>
+        ) : isError ? (
+          <div className="text-red-500">{error.message}</div>
+        ) : (
+          <>
+            <table className="min-w-full rounded-lg border">
+              <thead className="bg-gray-100">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="border-b px-4 py-2 text-left"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={columns.length} className="p-4 text-center">
+                      No data found
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="border-b px-4 py-2">
                           {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
+                            cell.column.columnDef.cell,
+                            cell.getContext()
                           )}
-                        </th>
+                        </td>
                       ))}
                     </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center p-4">
-                        No data found
-                      </td>
-                    </tr>
-                  ) : (
-                    table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className="hover:bg-gray-50">
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-4 py-2 border-b">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                  ))
+                )}
+              </tbody>
+            </table>
 
-              {/* Pagination */}
-              <div className="flex justify-between mt-4">
-                <span>
-                  Page {fetchData?.pagination?.currentPage || 1} of{" "}
-                  {fetchData?.pagination?.totalPages || 1}
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    disabled={!table.getCanPreviousPage()}
-                    onClick={() => table.previousPage()}
-                    className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
-                  <button
-                    disabled={!table.getCanNextPage()}
-                    onClick={() => table.nextPage()}
-                    className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
+            <div className="mt-4 flex justify-between">
+              <span>
+                Page {fetchData?.pagination?.currentPage || 1} of{" "}
+                {fetchData?.pagination?.totalPages || 1}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={!table.getCanPreviousPage()}
+                  onClick={() => table.previousPage()}
+                  className="rounded bg-gray-300 px-3 py-1 disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  disabled={!table.getCanNextPage()}
+                  onClick={() => table.nextPage()}
+                  className="rounded bg-gray-300 px-3 py-1 disabled:opacity-50"
+                >
+                  Next
+                </button>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
-    </AdminLayout>
+    </div>
   );
 }

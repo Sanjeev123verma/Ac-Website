@@ -13,12 +13,21 @@ module.exports = {
   			'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
   			'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))'
   		},
+  		boxShadow: {
+  			hard: '8px 8px 0 #111827',
+  			'hard-sm': '4px 4px 0 #111827'
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			paper: '#f4efe1',
+  			ink: '#111827',
+  			royal: '#2254d8',
+  			gold: '#f4bf2a',
+  			blueprint: '#174aa6',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -63,11 +72,24 @@ module.exports = {
   	},
   	fontFamily: {
   		abc: [
-  			'Ubuntu',
-  			'sans-serif'
+  			'var(--font-body)',
+  			'Georgia',
+  			'serif'
   		],
   		headerfont: [
-  			'Abril Fatface'
+  			'var(--font-display)',
+  			'Georgia',
+  			'serif'
+  		],
+  		serif: [
+  			'var(--font-display)',
+  			'Georgia',
+  			'serif'
+  		],
+  		sans: [
+  			'var(--font-body)',
+  			'Georgia',
+  			'serif'
   		]
   	}
   },

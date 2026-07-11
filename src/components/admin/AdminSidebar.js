@@ -1,81 +1,77 @@
-
 "use client";
+
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { FiX } from "react-icons/fi";
 import { useAuth } from "@/context/authContext";
-import { FiX } from "react-icons/fi"; // Close icon
-import { IoMdAddCircleOutline } from "react-icons/io";
-import Image from "next/image";
 
 export default function AdminSidebar({ isOpen, onClose }) {
-  // Receive isOpen and onClose as props
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+
+  const links = [
+    { href: "/admin/dashboard", label: "Dashboard" },
+    { href: "/admin/customers", label: "Customers" },
+    { href: "/admin/services", label: "Services" },
+    { href: "/admin/registration", label: "Registrations" },
+  ];
 
   const handleLogout = () => {
     logout();
     router.push("/admin/login");
   };
 
-  const getLinkClasses = (path) => {
-    return pathname === path
-      ? "py-2 px-4 bg-gray-600 font-semibold text-xl text-blue-300"
-      : "py-2 px-4 hover:bg-gray-700";
-  };
+  const getLinkClasses = (path) =>
+    pathname === path
+      ? "block rounded-md bg-slate-700 px-4 py-3 font-semibold text-sky-200"
+      : "block rounded-md px-4 py-3 text-slate-200 hover:bg-slate-700 hover:text-white";
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 h-full bg-gray-800 text-white w-64 transition-transform transform ${
+      className={`fixed left-0 top-0 z-40 h-full w-64 bg-slate-900 text-white shadow-xl transition-transform ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       } md:translate-x-0`}
     >
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between border-b border-white/10 p-4">
         <div className="flex items-center gap-3">
           <Image
-            src="/Images/logo.jpeg"
-            alt="Logo"
-            width={200}
-            height={100}
-            className="w-10 h-10 rounded-full"
+            src="/ai-assets/swan-service-logo-small.jpg"
+            alt="Swan AC logo"
+            width={48}
+            height={48}
+            className="h-10 w-10 rounded-full object-cover"
           />
           <h1 className="text-lg font-bold">Admin Panel</h1>
         </div>
-        <button className="md:hidden text-white text-2xl" onClick={onClose}>
-          <FiX size={50} />
+        <button
+          type="button"
+          className="rounded-md p-2 text-white hover:bg-white/10 md:hidden"
+          onClick={onClose}
+          aria-label="Close admin menu"
+        >
+          <FiX size={24} />
         </button>
       </div>
-      <nav className="mt-2">
-        <ul>
-          <li className={getLinkClasses("/admin/dashboard")}>
-            <Link href="/admin/dashboard">Dashboard</Link>
-          </li>
-          <li className={getLinkClasses("/admin/customers")}>
-            <Link href="/admin/customers">Customers</Link>
-          </li>
-          <li className={getLinkClasses("/admin/services")}>
-            <Link href="/admin/services">Services</Link>
-          </li>
-          <li className={getLinkClasses("/admin/registration")}>
-            <Link href="/admin/registration">Registrations</Link>
-          </li>
-          <li>
+
+      <nav className="mt-4 px-3">
+        <ul className="space-y-1">
+          {links.map((link) => (
+            <li key={link.href}>
+              <Link href={link.href} className={getLinkClasses(link.href)}>
+                {link.label}
+              </Link>
+            </li>
+          ))}
+          <li className="pt-4">
             <button
+              type="button"
               onClick={handleLogout}
-              className="block py-2 px-4 mx-4 my-4 bg-red-400 rounded-md"
+              className="w-full rounded-md bg-red-500 px-4 py-3 text-left font-semibold text-white hover:bg-red-600"
             >
               Logout
             </button>
-          </li>
-
-          <li className={getLinkClasses("/admin/dashboard")}>
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center space-x-2"
-            >
-              <IoMdAddCircleOutline className="text-2xl" />
-              <span>Add Banners</span>
-            </Link>
           </li>
         </ul>
       </nav>
